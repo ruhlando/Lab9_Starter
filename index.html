@@ -1,26 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lab 9</title>
-
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab 9 – Console & Error Handling</title>
   <style>
-    button {
-      margin: 3px;
-    }
-
-    button:hover {
-      cursor: pointer;
-    }
-
-    #first-num,
-    #second-num {
-      width: 60px;
-    }
-
+    button { margin: 3px; }
+    button:hover { cursor: pointer; }
+    #first-num, #second-num { width: 60px; }
     output {
       border: 1px solid gray;
       display: block;
@@ -29,11 +17,7 @@
       padding: 5px;
       width: 240px;
     }
-
-    main {
-      width: 800px;
-    }
-
+    main { width: 800px; }
     #error-btns {
       column-gap: 5px;
       display: flex;
@@ -41,68 +25,113 @@
       margin-top: 30px;
       row-gap: 5px;
     }
-
-    #error-btns>* {
+    #error-btns > * {
       padding: 8px 2px;
       width: 122px;
     }
   </style>
 </head>
-
 <body>
   <main>
     <form>
       <fieldset>
         <legend>Error Calculator</legend>
-        <input name="first-num" id="first-num" />
-        <select name="operator" id="operator">
-          <option>+</option>
-          <option>-</option>
-          <option>*</option>
-          <option>/</option>
+        <input id="first-num" />
+        <select id="operator">
+          <option>+</option><option>-</option><option>*</option><option>/</option>
         </select>
-        <input name="second-num" id="second-num" />
+        <input id="second-num" />
         <button id="calculate">Calculate</button>
-        <br />
+        <br/>
         <output></output>
       </fieldset>
     </form>
 
     <section id="error-btns">
-      <button>Console Log</button>
-      <button>Console Error</button>
-      <button>Console Count</button>
-      <button>Console Warn</button>
-      <button>Console Assert</button>
-      <button>Console Clear</button>
-      <button>Console Dir</button>
-      <button>Console dirxml</button>
-      <button>Console Group Start</button>
-      <button>Console Group End</button>
-      <button>Console Table</button>
-      <button>Start Timer</button>
-      <button>End Timer</button>
-      <button>Console Trace</button>
-      <button>Trigger a Global Error</button>
+      <button id="btn-log">Console Log</button>
+      <button id="btn-error">Console Error</button>
+      <button id="btn-count">Console Count</button>
+      <button id="btn-warn">Console Warn</button>
+      <button id="btn-assert">Console Assert</button>
+      <button id="btn-clear">Console Clear</button>
+      <button id="btn-dir">Console Dir</button>
+      <button id="btn-dirxml">Console Dirxml</button>
+      <button id="btn-group-start">Console Group Start</button>
+      <button id="btn-group-end">Console Group End</button>
+      <button id="btn-table">Console Table</button>
+      <button id="btn-timer-start">Start Timer</button>
+      <button id="btn-timer-end">End Timer</button>
+      <button id="btn-trace">Console Trace</button>
+      <button id="btn-global-error">Trigger a Global Error</button>
     </section>
   </main>
 
   <script>
-    let form = document.querySelector('form');
-    form.addEventListener('submit', e => {
+    // Simple calculator
+    document.getElementById('calculate').addEventListener('click', e => {
       e.preventDefault();
-      let output = document.querySelector('output');
-      let firstNum = document.querySelector('#first-num').value;
-      let secondNum = document.querySelector('#second-num').value;
-      let operator = document.querySelector('#operator').value;
-      output.innerHTML = eval(`${firstNum} ${operator} ${secondNum}`);
+      const out = document.querySelector('output');
+      const a = Number(document.getElementById('first-num').value);
+      const b = Number(document.getElementById('second-num').value);
+      const op = document.getElementById('operator').value;
+      // wrap in try/catch to demonstrate error handling
+      try {
+        if (isNaN(a) || isNaN(b)) throw new Error('Inputs must be numbers');
+        const result = eval(`${a} ${op} ${b}`);
+        out.textContent = result;
+      } catch (err) {
+        console.error('Calculation failed:', err);
+        out.textContent = 'Error!';
+      }
     });
 
-    let errorBtns = Array.from(document.querySelectorAll('#error-btns > button'));
+    // Grab all buttons for console demos
+    const demos = {
+      log:         () => console.log('This is a %s message with %d arguments', 'log', 2),
+      error:       () => console.error('This is an error message'),
+      count:       () => console.count('Counter'),
+      warn:        () => console.warn('This is a warning'),
+      assert:      () => console.assert(2 + 2 === 5, 'Math is broken!'),
+      clear:       () => console.clear(),
+      dir:         () => console.dir(document.body),
+      dirxml:      () => console.dirxml(document.body),
+      groupStart:  () => console.group('My Group'),
+      groupEnd:    () => console.groupEnd('My Group'),
+      table:       () => console.table([
+                       { name: 'Alice', age: 30 },
+                       { name: 'Bob',   age: 25 },
+                       { name: 'Carol', age: 35 }
+                     ]),
+      timerStart:  () => console.time('MyTimer'),
+      timerEnd:    () => console.timeEnd('MyTimer'),
+      trace:       () => {
+                       function a() { b(); }
+                       function b() { c(); }
+                       function c() { console.trace('Trace demo'); }
+                       a();
+                     },
+      globalError: () => {
+                       // this will throw, unhandled, and bubble up as a global error
+                       nonexistentFunction();
+                     }
+    };
 
-    // Start your code here
-    // You may move this JS to another file if you wish
+    // Attach each demo to its button
+    document.getElementById('btn-log').     onclick = demos.log;
+    document.getElementById('btn-error').   onclick = demos.error;
+    document.getElementById('btn-count').   onclick = demos.count;
+    document.getElementById('btn-warn').    onclick = demos.warn;
+    document.getElementById('btn-assert').  onclick = demos.assert;
+    document.getElementById('btn-clear').   onclick = demos.clear;
+    document.getElementById('btn-dir').     onclick = demos.dir;
+    document.getElementById('btn-dirxml').  onclick = demos.dirxml;
+    document.getElementById('btn-group-start').onclick = demos.groupStart;
+    document.getElementById('btn-group-end').  onclick = demos.groupEnd;
+    document.getElementById('btn-table').   onclick = demos.table;
+    document.getElementById('btn-timer-start').onclick = demos.timerStart;
+    document.getElementById('btn-timer-end').  onclick = demos.timerEnd;
+    document.getElementById('btn-trace').   onclick = demos.trace;
+    document.getElementById('btn-global-error').onclick = demos.globalError;
   </script>
 </body>
-
 </html>
