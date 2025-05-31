@@ -5,6 +5,15 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lab 9 – Console & Error Handling</title>
+  <!-- Step 5 (part 2): Insert TrackJS agent script -->
+  <script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
+  <script>
+    // Initialize TrackJS
+    window.TrackJS && TrackJS.install({
+      token: "b6a9410ec60d4688814ea063adfbf19d",
+      application: "Lab9_Starter"
+    });
+  </script>
   <style>
     button { margin: 3px; }
     button:hover { cursor: pointer; }
@@ -33,6 +42,10 @@
       margin-top: 20px;
       padding: 10px;
       border: 1px solid #ccc;
+    }
+    #error-list {
+      margin-top: 20px;
+      padding-left: 20px;
     }
   </style>
 </head>
@@ -70,7 +83,10 @@
       <button id="btn-custom-error">Custom Error</button>
       <button id="btn-global-error">Trigger a Global Error</button>
       <button id="btn-extended-error">Extended Error</button>
+      <button id="btn-show-errors">Show All Errors</button>
     </section>
+
+    <ul id="error-list"></ul>
 
     <!-- Uncomment to simulate profile existing -->
     <!--
@@ -83,6 +99,30 @@
   </main>
 
   <script>
+    // Array to collect all error messages
+    const allErrors = [];
+
+    // --- Global error handler: Step 5 (part 1) ---
+    window.onerror = function(message, source, lineno, colno, error) {
+      const errMsg = `Global error: ${message} (${source}:${lineno})`;
+      console.log('Global error intercepted:', message);
+      allErrors.push(errMsg);
+      // Track the error using TrackJS
+      if (window.TrackJS) {
+        TrackJS.track(message + " (" + source + ":" + lineno + ")");
+      }
+      // Return true to prevent the default browser error handler
+      return true;
+    };
+
+    // Utility: Add error to list and optionally send to TrackJS
+    function recordError(msg) {
+      allErrors.push(msg);
+      if (window.TrackJS) {
+        TrackJS.track(msg);
+      }
+    }
+
     // Calculator with try/catch/finally
     document.getElementById('calculate').addEventListener('click', e => {
       e.preventDefault();
@@ -98,7 +138,9 @@
         const result = eval(`${a} ${op} ${b}`);
         out.textContent = result;
       } catch (err) {
-        console.error('Calculation error:', err);
+        const errMsg = `Calculation error: ${err.message}`;
+        console.error(errMsg);
+        recordError(errMsg + ' (caught in calculate)');
         out.textContent = 'Error!';
       } finally {
         console.log('Calculation attempt finished');
@@ -108,9 +150,17 @@
     // Step 2: Console API demos
     const demos = {
       log:         () => console.log('Hello from %s demo!', 'console.log'),
-      error:       () => console.error('This is a console.error message'),
+      error:       () => {
+                       const msg = 'This is a console.error message';
+                       console.error(msg);
+                       recordError(msg + ' (console.error demo)');
+                     },
       count:       () => console.count('DemoCounter'),
-      warn:        () => console.warn('Warning: something suspicious happened'),
+      warn:        () => {
+                       const msg = 'Warning: something suspicious happened';
+                       console.warn(msg);
+                       recordError(msg + ' (console.warn demo)');
+                     },
       assert:      () => console.assert(1 + 1 === 3, 'Assert failed: 1+1!==3'),
       clear:       () => console.clear(),
       dir:         () => console.dir(document.body),
@@ -133,14 +183,27 @@
                        x();
                      },
       globalError: () => {
+                       // This will trigger window.onerror
                        missingFunction();
                      }
     };
 
-    Object.entries(demos).forEach(([key, fn]) => {
-      const btn = document.getElementById('btn-' + key);
-      if (btn) btn.onclick = fn;
-    });
+    // Attach each demo button explicitly
+    document.getElementById('btn-log').onclick          = demos.log;
+    document.getElementById('btn-error').onclick        = demos.error;
+    document.getElementById('btn-count').onclick        = demos.count;
+    document.getElementById('btn-warn').onclick         = demos.warn;
+    document.getElementById('btn-assert').onclick       = demos.assert;
+    document.getElementById('btn-clear').onclick        = demos.clear;
+    document.getElementById('btn-dir').onclick          = demos.dir;
+    document.getElementById('btn-dirxml').onclick       = demos.dirxml;
+    document.getElementById('btn-group-start').onclick  = demos.groupStart;
+    document.getElementById('btn-group-end').onclick    = demos.groupEnd;
+    document.getElementById('btn-table').onclick        = demos.table;
+    document.getElementById('btn-timer-start').onclick  = demos.timerStart;
+    document.getElementById('btn-timer-end').onclick    = demos.timerEnd;
+    document.getElementById('btn-trace').onclick        = demos.trace;
+    document.getElementById('btn-global-error').onclick = demos.globalError;
 
     // Step 3: try/catch/finally + throw demo
     document.getElementById('btn-custom-error').onclick = () => {
@@ -151,7 +214,9 @@
         }
         console.log('Profile element found:', profile);
       } catch (err) {
-        console.error('Custom error caught:', err);
+        const errMsg = `Custom error caught: ${err.message}`;
+        console.error(errMsg);
+        recordError(errMsg + ' (custom-error)');
       } finally {
         console.log('Custom error demo complete (finally always runs).');
       }
@@ -179,12 +244,32 @@
         console.log('Age validated:', numAge);
       } catch (err) {
         if (err instanceof ValidationError) {
-          console.error(`%c${err.name} [${err.code}]: ${err.message}`, 'color: red;');
+          const errMsg = `${err.name} [${err.code}]: ${err.message}`;
+          console.error(`%c${errMsg}`, 'color: red;');
+          recordError(errMsg + ' (extended-error)');
         } else {
           console.error('Unexpected error:', err);
+          recordError(err.message + ' (unexpected)');
         }
       } finally {
         console.log('Extended error demo done.');
+      }
+    };
+
+    // Step 5: Show all errors button
+    document.getElementById('btn-show-errors').onclick = () => {
+      const listEl = document.getElementById('error-list');
+      listEl.innerHTML = ''; // clear previous list
+      if (allErrors.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = 'No errors recorded.';
+        listEl.appendChild(li);
+      } else {
+        allErrors.forEach(msg => {
+          const li = document.createElement('li');
+          li.textContent = msg;
+          listEl.appendChild(li);
+        });
       }
     };
   </script>
