@@ -29,6 +29,11 @@
       padding: 8px 2px;
       width: 122px;
     }
+    #user-profile {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
@@ -62,76 +67,126 @@
       <button id="btn-timer-start">Start Timer</button>
       <button id="btn-timer-end">End Timer</button>
       <button id="btn-trace">Console Trace</button>
+      <button id="btn-custom-error">Custom Error</button>
       <button id="btn-global-error">Trigger a Global Error</button>
+      <button id="btn-extended-error">Extended Error</button>
     </section>
+
+    <!-- Uncomment to simulate profile existing -->
+    <!--
+    <div id="user-profile">
+      <h2>User Profile</h2>
+      <p>Name: Jane Doe</p>
+      <p>Role: Student</p>
+    </div>
+    -->
   </main>
 
   <script>
-    // Simple calculator
+    // Calculator with try/catch/finally
     document.getElementById('calculate').addEventListener('click', e => {
       e.preventDefault();
       const out = document.querySelector('output');
       const a = Number(document.getElementById('first-num').value);
       const b = Number(document.getElementById('second-num').value);
       const op = document.getElementById('operator').value;
-      // wrap in try/catch to demonstrate error handling
+
       try {
-        if (isNaN(a) || isNaN(b)) throw new Error('Inputs must be numbers');
+        if (isNaN(a) || isNaN(b)) {
+          throw new TypeError('Both inputs must be valid numbers');
+        }
         const result = eval(`${a} ${op} ${b}`);
         out.textContent = result;
       } catch (err) {
-        console.error('Calculation failed:', err);
+        console.error('Calculation error:', err);
         out.textContent = 'Error!';
+      } finally {
+        console.log('Calculation attempt finished');
       }
     });
 
-    // Grab all buttons for console demos
+    // Step 2: Console API demos
     const demos = {
-      log:         () => console.log('This is a %s message with %d arguments', 'log', 2),
-      error:       () => console.error('This is an error message'),
-      count:       () => console.count('Counter'),
-      warn:        () => console.warn('This is a warning'),
-      assert:      () => console.assert(2 + 2 === 5, 'Math is broken!'),
+      log:         () => console.log('Hello from %s demo!', 'console.log'),
+      error:       () => console.error('This is a console.error message'),
+      count:       () => console.count('DemoCounter'),
+      warn:        () => console.warn('Warning: something suspicious happened'),
+      assert:      () => console.assert(1 + 1 === 3, 'Assert failed: 1+1!==3'),
       clear:       () => console.clear(),
       dir:         () => console.dir(document.body),
       dirxml:      () => console.dirxml(document.body),
-      groupStart:  () => console.group('My Group'),
-      groupEnd:    () => console.groupEnd('My Group'),
+      groupStart:  () => {
+                       console.group('Demo Group');
+                       console.log('Inside group');
+                     },
+      groupEnd:    () => console.groupEnd(),
       table:       () => console.table([
-                       { name: 'Alice', age: 30 },
-                       { name: 'Bob',   age: 25 },
-                       { name: 'Carol', age: 35 }
+                       { name: 'Alice', score: 42 },
+                       { name: 'Bob',   score: 37 },
                      ]),
       timerStart:  () => console.time('MyTimer'),
       timerEnd:    () => console.timeEnd('MyTimer'),
       trace:       () => {
-                       function a() { b(); }
-                       function b() { c(); }
-                       function c() { console.trace('Trace demo'); }
-                       a();
+                       function x() { y(); }
+                       function y() { z(); }
+                       function z() { console.trace('Trace here'); }
+                       x();
                      },
       globalError: () => {
-                       // this will throw, unhandled, and bubble up as a global error
-                       nonexistentFunction();
+                       missingFunction();
                      }
     };
 
-    // Attach each demo to its button
-    document.getElementById('btn-log').     onclick = demos.log;
-    document.getElementById('btn-error').   onclick = demos.error;
-    document.getElementById('btn-count').   onclick = demos.count;
-    document.getElementById('btn-warn').    onclick = demos.warn;
-    document.getElementById('btn-assert').  onclick = demos.assert;
-    document.getElementById('btn-clear').   onclick = demos.clear;
-    document.getElementById('btn-dir').     onclick = demos.dir;
-    document.getElementById('btn-dirxml').  onclick = demos.dirxml;
-    document.getElementById('btn-group-start').onclick = demos.groupStart;
-    document.getElementById('btn-group-end').  onclick = demos.groupEnd;
-    document.getElementById('btn-table').   onclick = demos.table;
-    document.getElementById('btn-timer-start').onclick = demos.timerStart;
-    document.getElementById('btn-timer-end').  onclick = demos.timerEnd;
-    document.getElementById('btn-trace').   onclick = demos.trace;
-    document.getElementById('btn-global-error').onclick = demos.globalError;
+    Object.entries(demos).forEach(([key, fn]) => {
+      const btn = document.getElementById('btn-' + key);
+      if (btn) btn.onclick = fn;
+    });
+
+    // Step 3: try/catch/finally + throw demo
+    document.getElementById('btn-custom-error').onclick = () => {
+      try {
+        const profile = document.getElementById('user-profile');
+        if (!profile) {
+          throw new ReferenceError('Element #user-profile is required but missing.');
+        }
+        console.log('Profile element found:', profile);
+      } catch (err) {
+        console.error('Custom error caught:', err);
+      } finally {
+        console.log('Custom error demo complete (finally always runs).');
+      }
+    };
+
+    // Step 4: Extended Custom Error Demo
+    class ValidationError extends Error {
+      constructor(message, code) {
+        super(message);
+        this.name = 'ValidationError';
+        this.code = code;
+      }
+    }
+
+    document.getElementById('btn-extended-error').onclick = () => {
+      try {
+        const age = prompt('Enter your age:');
+        const numAge = Number(age);
+        if (isNaN(numAge)) {
+          throw new ValidationError('Age must be a number', 'ERR_NOT_NUMBER');
+        }
+        if (numAge < 18) {
+          throw new ValidationError('You must be at least 18 years old', 'ERR_UNDERAGE');
+        }
+        console.log('Age validated:', numAge);
+      } catch (err) {
+        if (err instanceof ValidationError) {
+          console.error(`%c${err.name} [${err.code}]: ${err.message}`, 'color: red;');
+        } else {
+          console.error('Unexpected error:', err);
+        }
+      } finally {
+        console.log('Extended error demo done.');
+      }
+    };
   </script>
 </body>
 </html>
